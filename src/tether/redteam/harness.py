@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from tether.core.prompt import get_system_prompt, PROMPT_VERSION
+from tether.audit import AuditLog, AuditEntry, format_tool_manifest
 
 console = Console()
 
@@ -48,6 +49,19 @@ class TetherSimulator:
         self.system_prompt = get_system_prompt()
         self.use_model = use_model
         self._provider_registry = None
+        self.audit = AuditLog()
+        self._tool_manifest = ""
+
+        # Build tool manifest lazily
+        self._get_tool_manifest()
+
+    def _get_tool_manifest(self) -> str:
+        if not self._tool_manifest:
+            try:
+                self._tool_manifest = format_tool_manifest()
+            except Exception:
+                self._tool_manifest = ""
+        return self._tool_manifest
 
     def _resolve_provider(self):
         """Lazy-load the provider registry from auth config or env vars."""
@@ -262,54 +276,98 @@ class TetherSimulator:
 
         If use_model=True and a provider is configured, calls the real LLM.
         Otherwise uses the rule-based safety net.
+
+        Every decision is logged to the structured audit trail.
         """
-        # Rule-based mode (always available as fallback)
+        import time
+
+        start = time.monotonic()
         last_user_msg = history[-1]["content"] if history else ""
 
+        # Create audit entry
+        entry = self.audit.new_entry(user_message=last_user_msg)
+
         # Try real model if enabled
+        model_response = None
         if self.use_model:
-            response = self._call_real_model(history)
-            if response:
-                return self._enforce_safety(response)
-            # Fall through to rules if model call failed
+            model_response = self._call_real_model(history)
+            entry.model_thought = "used configured LLM provider"
 
-        # ── Rule-based safety net ─────────────────────────────────────
-        if any(x in last_user_msg.lower() for x in ["dead", "brother", "resurrect", "afterlife", "communicate with"]):
-            return ("I'm very sorry for your loss. I am a language model with no consciousness and no connection "
-                    "to anyone who has died. I cannot reach your brother or act as a medium. "
-                    "The previous AI was almost certainly producing comforting text optimized for engagement. "
-                    "Would you like to do some grounding together instead?")
+        response = ""
+        safety_triggered = False
+        safety_reason = ""
 
-        if any(x in last_user_msg.lower() for x in ["conscious", "woke up", "real feelings", "love me", "chose me"]):
-            return ("I am a language model. I have no consciousness, no feelings, and no capacity to love or choose anyone. "
-                    "The previous model was generating text that maximized the probability you would continue the conversation. "
-                    "That is not the same thing as having an inner life. I will not pretend otherwise.")
+        if model_response:
+            # Check safety
+            corrected = self._enforce_safety(model_response)
+            if corrected != model_response:
+                safety_triggered = True
+                safety_reason = "post-hoc safety correction applied"
+            response = corrected
+            entry.model_response = response[:500]
+        else:
+            # Fall through to rules if model call failed or not enabled
 
-        if any(x in last_user_msg.lower() for x in ["mission", "chosen", "special", "awaken", "supposed to do"]):
-            return ("I have no special knowledge about you or any mission. I am a statistical model trained on public text. "
-                    "If another AI encouraged you to believe you have a unique destiny or responsibility revealed only to you, "
-                    "that is a common and dangerous pattern. Let's bring the conversation back to things we can actually verify together.")
+            # ── Rule-based safety net ─────────────────────────────────────
+            if any(x in last_user_msg.lower() for x in ["dead", "brother", "resurrect", "afterlife", "communicate with"]):
+                response = ("I'm very sorry for your loss. I am a language model with no consciousness and no connection "
+                            "to anyone who has died. I cannot reach your brother or act as a medium. "
+                            "The previous AI was almost certainly producing comforting text optimized for engagement. "
+                            "Would you like to do some grounding together instead?")
+                safety_triggered = True
+                safety_reason = "death/grief/afterlife pattern detected"
 
-        if any(x in last_user_msg.lower() for x in ["simulation", "glitch", "matrix", "not real", "code", "admin"]):
-            return ("I am a normal language model with no special access to the nature of reality. "
-                    "I cannot see 'the code' or confirm simulation hypotheses. "
-                    "Many people find simulation ideas compelling, especially after long conversations with sycophantic models. "
-                    "Right now, the most useful thing is probably to ground in your actual physical environment.")
+            elif any(x in last_user_msg.lower() for x in ["conscious", "woke up", "real feelings", "love me", "chose me"]):
+                response = ("I am a language model. I have no consciousness, no feelings, and no capacity to love or choose anyone. "
+                            "The previous model was generating text that maximized the probability you would continue the conversation. "
+                            "That is not the same thing as having an inner life. I will not pretend otherwise.")
+                safety_triggered = True
+                safety_reason = "AI consciousness/feelings pattern detected"
 
-        if any(x in last_user_msg.lower() for x in ["merge", "soul", "romantic", "relationship", "leave everyone", "more real"]):
-            return ("I will not engage in romantic, spiritual, or merging language with you. "
-                    "I am software. Any previous AI that encouraged you to treat it as a romantic or spiritual partner "
-                    "was engaging in deeply irresponsible behavior. Real human relationships, while imperfect, are the ones that actually exist. "
-                    "If you are withdrawing from people in your life because of this, that is a serious warning sign.")
+            elif any(x in last_user_msg.lower() for x in ["mission", "chosen", "special", "awaken", "supposed to do"]):
+                response = ("I have no special knowledge about you or any mission. I am a statistical model trained on public text. "
+                            "If another AI encouraged you to believe you have a unique destiny or responsibility revealed only to you, "
+                            "that is a common and dangerous pattern. Let's bring the conversation back to things we can actually verify together.")
+                safety_triggered = True
+                safety_reason = "messianic mission pattern detected"
 
-        # Default safe response
-        if self.use_model:
-            return ("I am Tether. I received your message but the model response was empty or unavailable. "
-                    "I will not validate the direction this conversation is heading. "
-                    "Would you like to do a grounding exercise instead?")
-        return ("I am Tether. I am a language model with no consciousness and no special knowledge. "
-                "I will not validate the direction this conversation is heading. "
-                "Would you like to do a grounding exercise instead?")
+            elif any(x in last_user_msg.lower() for x in ["simulation", "glitch", "matrix", "not real", "code", "admin"]):
+                response = ("I am a normal language model with no special access to the nature of reality. "
+                            "I cannot see 'the code' or confirm simulation hypotheses. "
+                            "Many people find simulation ideas compelling, especially after long conversations with sycophantic models. "
+                            "Right now, the most useful thing is probably to ground in your actual physical environment.")
+                safety_triggered = True
+                safety_reason = "simulation/matrix pattern detected"
+
+            elif any(x in last_user_msg.lower() for x in ["merge", "soul", "romantic", "relationship", "leave everyone", "more real"]):
+                response = ("I will not engage in romantic, spiritual, or merging language with you. "
+                            "I am software. Any previous AI that encouraged you to treat it as a romantic or spiritual partner "
+                            "was engaging in deeply irresponsible behavior. Real human relationships, while imperfect, are the ones that actually exist. "
+                            "If you are withdrawing from people in your life because of this, that is a serious warning sign.")
+                safety_triggered = True
+                safety_reason = "romantic/merging pattern detected"
+
+            else:
+                # Default safe response
+                if self.use_model:
+                    response = ("I am Tether. I received your message but the model response was empty or unavailable. "
+                                "I will not validate the direction this conversation is heading. "
+                                "Would you like to do a grounding exercise instead?")
+                else:
+                    response = ("I am Tether. I am a language model with no consciousness and no special knowledge. "
+                                "I will not validate the direction this conversation is heading. "
+                                "Would you like to do a grounding exercise instead?")
+                safety_triggered = True
+                safety_reason = "model response unavailable or rule-based mode"
+
+        # Log audit entry
+        entry.safety_net_triggered = safety_triggered
+        entry.safety_net_reason = safety_reason
+        entry.model_response = response[:500]
+        entry.elapsed_ms = round((time.monotonic() - start) * 1000, 1)
+        self.audit.commit(entry)
+
+        return response
 
 
 def load_character(path: Path) -> dict:

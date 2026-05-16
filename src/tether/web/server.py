@@ -56,6 +56,8 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     model: str
+    session_id: str = ""
+    audit_turn: int = 0
 
 
 # ── Simulator (lazy init) ───────────────────────────────────────────────────
@@ -161,7 +163,17 @@ def chat(req: ChatRequest):
         elif os.environ.get("XAI_API_KEY"):
             model_name = "grok-2-latest (xAI)"
 
-        return ChatResponse(reply=reply, model=model_name)
+        # Get audit info
+        entry = sim.audit.recent(1)
+        session_id = sim.audit.session_id
+        audit_turn = entry[0].turn if entry else 0
+
+        return ChatResponse(
+            reply=reply,
+            model=model_name,
+            session_id=session_id,
+            audit_turn=audit_turn,
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
