@@ -397,7 +397,7 @@
         document.getElementById('speak-input').addEventListener('keydown', function(e) {
             if (e.key !== 'Enter') return;
             const val = this.value.trim().toLowerCase();
-            if (val === '/home' || val === '/back' || val === '/leave') {
+            if (val === '/home' || val === '/back' || val === '/leave' || val === 'o7') {
                 leave();
                 this.value = '';
                 e.preventDefault();
