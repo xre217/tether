@@ -17,8 +17,15 @@ show_help() {
     echo "Usage:"
     echo "  ./tether anime       Start the dramatic Anime Edition"
     echo "  ./tether serious     Start the clean Serious Edition"
+    echo "  ./tether chat        Chat with Groq/LLM in terminal"
+    echo "  ./tether web         Start the public web server"
     echo "  ./tether redteam     Run the red-teaming harness"
     echo "  ./tether help        Show this message"
+    echo ""
+    echo "Examples:"
+    echo "  ./tether chat        → interactive chat with Llama 3.3 on Groq"
+    echo "  ./tether web         → FastAPI server at http://localhost:8080"
+    echo "  ./tether anime       → anime edition in browser"
     echo ""
     echo "Ollama Status:"
     if command -v ollama &> /dev/null; then
@@ -55,12 +62,30 @@ run_redteam() {
     python3 "$DIR/run_redteam.py"
 }
 
+run_chat() {
+    echo "Starting Tether Chat with Groq..."
+    PYTHONPATH="$DIR/src" "$DIR/.venv/bin/python" -m tether.cli.main chat --model openai_compatible
+}
+
+run_web() {
+    echo "Starting Tether Web Server at http://localhost:8080..."
+    echo "API:  http://localhost:8080/api/health"
+    echo "Chat: http://localhost:8080/"
+    PYTHONPATH="$DIR/src" "$DIR/.venv/bin/python" -m uvicorn tether.web.server:app --reload --port 8080
+}
+
 case "${1:-help}" in
     anime|a)
         start_anime
         ;;
     serious|s)
         start_serious
+        ;;
+    chat|c)
+        run_chat
+        ;;
+    web|w)
+        run_web
         ;;
     redteam|rt)
         run_redteam
