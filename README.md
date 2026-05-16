@@ -112,6 +112,63 @@ This is **pre-alpha**. Do not rely on it as your only safety net.
 
 ---
 
+## Public Deployment
+
+Tether can be deployed as a public web service. One-click deploy on Render:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://dashboard.render.com/blueprint?repo=https://github.com/xre217/tether)
+
+### What gets deployed
+
+- **FastAPI backend** (`src/tether/web/server.py`) — serves the HTML UI and proxies chat to Groq
+- **Static frontend** — minimal Tether UI with speak, check, and about sections
+- **Auth module** — connects to Groq (or any OpenAI-compatible provider) using the configured API key
+
+### Environment variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `OPENAI_COMPATIBLE_API_KEY` | Yes | Groq API key for chat |
+| `PORT` | No | Server port (default: 8080) |
+
+### Running locally
+
+```bash
+# Dev server with auto-reload
+PYTHONPATH=src uvicorn tether.web.server:app --reload --port 8080
+
+# Production
+PYTHONPATH=src uvicorn tether.web.server:app --host 0.0.0.0 --port 8080
+```
+
+---
+
+## Auth Module (`src/tether/auth/`)
+
+Manages LLM provider connections for Tether. Supports three backends:
+
+| Provider | Type | Needs API Key |
+|---|---|---|
+| **Ollama** | Local (free, private) | No |
+| **LiteLLM** | 100+ providers via unified API | Yes |
+| **OpenAI-Compatible** | Groq, OpenAI, Together, etc. | Yes |
+
+```bash
+# Interactive setup
+PYTHONPATH=src python -m tether.cli.main auth setup
+
+# Test connection
+PYTHONPATH=src python -m tether.cli.main auth test
+
+# View status
+PYTHONPATH=src python -m tether.cli.main auth status
+
+# Chat with real model
+PYTHONPATH=src python -m tether.cli.main chat --model openai_compatible
+```
+
+---
+
 ## Contributing & Safety
 
 If you have lived experience with AI-amplified delusional episodes (your own or a loved one's), your input on the system prompt and grounding flows is especially valuable. Please open an issue or contact the maintainers.
