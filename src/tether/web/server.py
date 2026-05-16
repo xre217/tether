@@ -120,7 +120,19 @@ def health():
         "provider": cfg.kind.value,
         "model": cfg.active_model_name(),
         "version": PROMPT_VERSION,
+        "zero": _check_zero(),
     }
+
+
+def _check_zero() -> dict:
+    """Check if the Zero compiler is available."""
+    from tether.zero.compiler import ZeroCompiler
+    try:
+        c = ZeroCompiler()
+        v = c.version()
+        return {"installed": True, "version": v.split("\n")[0]}
+    except Exception as exc:
+        return {"installed": False, "error": str(exc)}
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -211,7 +223,10 @@ def zero_verify(req: ZeroVerifyRequest):
         verifier = ZeroVerifier()
         build = compiler.size(tmp_path)
         if not build.success:
-            return ZeroVerifyResponse(success=False)
+            return ZeroVerifyResponse(
+                success=False,
+                elapsed_ms=build.elapsed_ms,
+            )
 
         verification = verifier.verify(build)
         return ZeroVerifyResponse(

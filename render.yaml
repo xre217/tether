@@ -6,10 +6,15 @@ services:
     repo: https://github.com/xre217/tether
     plan: free
     region: oregon
-    buildCommand: pip install -e '.[web]' && pip install -r requirements-deploy.txt
+    buildCommand: >
+      curl -fsSL https://zerolang.ai/install.sh | bash &&
+      pip install -e . &&
+      pip install -r requirements-deploy.txt
     startCommand: uvicorn tether.web.server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: OPENAI_COMPATIBLE_API_KEY
-        sync: false  # You'll enter this manually in Render dashboard
+        sync: false
+      - key: XAI_API_KEY
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.11
