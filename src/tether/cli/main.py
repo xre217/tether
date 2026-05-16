@@ -1,5 +1,4 @@
-"""
-Tether CLI — Version 0.1 (Scaffolding)
+"""Tether CLI — Version 0.1 (Scaffolding)
 
 Typer + Rich interface. Grounding commands work immediately (no LLM required).
 Chat mode is currently a stub that prints the disclaimer and prompt version.
@@ -48,7 +47,7 @@ def main_callback() -> None:
 
 @app.command()
 def chat(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Provider to use (ollama, litellm, openai_compatible)"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Provider to use (ollama, litellm, openai_compatible, xai)"),
     debug: bool = typer.Option(False, "--debug", help="Show the system prompt on startup"),
 ) -> None:
     """
@@ -198,7 +197,7 @@ auth_app = typer.Typer(
 def setup(
     provider: Optional[str] = typer.Option(
         None, "--provider", "-p",
-        help="Provider to configure (ollama, litellm, openai_compatible)",
+        help="Provider to configure (ollama, litellm, openai_compatible, xai)",
     ),
 ) -> None:
     """Interactive setup for LLM provider connection."""
@@ -292,6 +291,26 @@ def setup(
         store.set(provider_str, "api_key", api_key)
         rprint("\n[green]✓[/green] OpenAI-compatible endpoint configured. API key stored securely.")
 
+    elif kind == ProviderKind.XAI:
+        cfg.xai.base_url = typer.prompt(
+            "xAI API base URL",
+            default=cfg.xai.base_url,
+        )
+        cfg.xai.model = typer.prompt(
+            "Model name",
+            default=cfg.xai.model,
+        )
+
+        from tether.auth.credentials import CredentialStore
+
+        store = CredentialStore()
+        api_key = typer.prompt(
+            "xAI API Key (get one at https://console.x.ai)",
+            hide_input=True,
+        )
+        store.set(provider_str, "api_key", api_key)
+        rprint("\n[green]✓[/green] xAI (Grok) configured. API key stored securely.")
+
     reg.save(config_path)
     rprint(f"\n[green]✓[/green] Configuration saved to [dim]{config_path}[/dim]")
 
@@ -324,7 +343,7 @@ def test_command() -> None:
     # Get API key if needed
     store = CredentialStore()
     api_key = None
-    if cfg.kind.value in ("litellm", "openai_compatible"):
+    if cfg.kind.value in ("litellm", "openai_compatible", "xai"):
         try:
             api_key = store.require(cfg.kind.value, "api_key")
         except KeyError:
@@ -363,6 +382,7 @@ def status() -> None:
         "ollama": "Ollama",
         "litellm": "LiteLLM",
         "openai_compatible": "OpenAI-Compatible",
+        "xai": "xAI (Grok)",
     }.get(cfg.kind.value, cfg.kind.value)
 
     table = Table(title="Tether Auth Status")
@@ -376,7 +396,7 @@ def status() -> None:
         table.add_row("Base URL", base_url)
 
     # Check credentials
-    if cfg.kind.value in ("litellm", "openai_compatible"):
+    if cfg.kind.value in ("litellm", "openai_compatible", "xai"):
         creds = store.list_credentials(cfg.kind.value)
         if creds:
             for key, masked in creds.items():
@@ -392,8 +412,152 @@ def status() -> None:
     rprint(f"\nConfig: [dim]{config_path}[/dim]")
 
 
-# Register auth sub-command
+# ── Zero CLI ────────────────────────────────────────────────────────────────
+
+zero_app = typer.Typer(
+    name="zero",
+    help="Zero compiler integration: compile, verify, and run Zero tools.",
+    add_completion=False,
+)
+
+
+@zero_app.command()
+def list() -> None:
+    """List available Zero tools with effect metadata."""
+    import json
+    from tether.zero.runner import ZeroToolRunner
+
+    runner = ZeroToolRunner()
+    tools = runner.list_tools()
+
+    if not tools:
+        rprint("[yellow]No Zero tools found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table(title="Zero Tools")
+    table.add_column("Tool", style="cyan")
+    table.add_column("Source", style="dim")
+    table.add_column("Status")
+
+    for t in tools:
+        try:
+            result = runner.dry_run(t["name"])
+            if result.passed_verification:
+                status = f"[green]✓[/green] {result.build.total_bytes}B"
+                caps = result.build.requires_capabilities
+                if caps:
+                    status += f" [{', '.join(caps)}]"
+            else:
+                status = "[yellow]check failed[/yellow]"
+        except Exception:
+            status = "[red]error[/red]"
+
+        table.add_row(t["name"], t["source"], status)
+
+    console.print(table)
+
+
+@zero_app.command()
+def check(
+    tool: str = typer.Argument(..., help="Tool name (with or without .0)"),
+) -> None:
+    """Compile and verify a Zero tool without executing it."""
+    from tether.zero.runner import ZeroToolRunner
+
+    runner = ZeroToolRunner()
+    result = runner.dry_run(tool)
+
+    if result.pipeline_errors:
+        for err in result.pipeline_errors:
+            rprint(f"[red]{err}[/red]")
+
+    if result.build and result.verification:
+        if result.verification.passed:
+            rprint(f"\n[green]✓ PASS[/green] — {result.build.total_bytes}B, {result.build.function_count} fn(s)")
+            rprint(f"  Target: {result.build.target}")
+            rprint(f"  Effects: {', '.join(result.build.requires_capabilities) or 'none'}")
+            rprint(f"  Elapsed: {result.build.elapsed_ms}ms")
+
+            for check_name, ok in result.verification.checks.items():
+                icon = "✓" if ok else "✗"
+                color = "green" if ok else "red"
+                rprint(f"  [{color}]{icon} {check_name}[/{color}]")
+
+            if result.build.capability_restrictions:
+                rprint("\n  [dim]Capability restrictions:[/dim]")
+                for cap, status in sorted(result.build.capability_restrictions.items()):
+                    color = "green" if status == "unavailable" else "yellow"
+                    rprint(f"    [{color}]{cap}[/{color}]: {status}")
+        else:
+            rprint(f"\n[red]✗ FAIL[/red] — verification failed")
+            for err in result.verification.errors:
+                rprint(f"  [red]{err}[/red]")
+
+
+@zero_app.command()
+def run(
+    tool: str = typer.Argument(..., help="Tool name (with or without .0)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full output"),
+) -> None:
+    """Full pipeline: compile, verify effects, then execute a Zero tool."""
+    import json
+    from tether.zero.runner import ZeroToolRunner
+
+    runner = ZeroToolRunner()
+    result = runner.run(tool)
+
+    if result.pipeline_errors:
+        for err in result.pipeline_errors:
+            rprint(f"[yellow]{err}[/yellow]")
+
+    if result.build and result.verification:
+        if result.verification.passed:
+            rprint(f"\n[green]✓ COMPILATION OK[/green] — {result.build.total_bytes}B, {result.build.function_count} fn(s)")
+            rprint(f"  Effects: {', '.join(result.build.requires_capabilities) or 'none'}")
+
+            if verbose and result.stdout:
+                rprint(f"\n[bold]Output:[/bold]")
+                rprint(result.stdout[:1000])
+
+            if result.json_output:
+                rprint(f"\n[bold]JSON:[/bold] {json.dumps(result.json_output, indent=2)[:500]}")
+        else:
+            rprint(f"\n[red]✗ VERIFICATION FAILED[/red]")
+            for err in result.verification.errors:
+                rprint(f"  [red]{err}[/red]")
+
+
+@zero_app.command()
+def new(
+    name: str = typer.Argument(..., help="Name of the new Zero tool (without .0)"),
+) -> None:
+    """Scaffold a new Zero tool from a template."""
+    from tether.zero.runner import ZeroToolRunner
+
+    runner = ZeroToolRunner()
+    tool_path = runner.get_tool_path(name)
+
+    if tool_path and tool_path.exists():
+        rprint(f"[red]Tool already exists: {tool_path}[/red]")
+        raise typer.Exit(code=1)
+
+    template = f'''pub fun main(world: World) -> Void raises {{
+    check world.out.write("{{\\"kind\\":\\"{name}\\",\\"status\\":\\"ok\\"}}\\n")
+}}
+'''
+
+    out_path = runner.tools_dir / f"{name}.0"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(template)
+
+    rprint(f"[green]✓[/green] Created Zero tool: [bold]{out_path}[/bold]")
+    rprint(f"  Run:  tether zero check {name}")
+    rprint(f"  Run:  tether zero run {name}")
+
+
+# Register sub-commands
 app.add_typer(auth_app)
+app.add_typer(zero_app)
 
 
 if __name__ == "__main__":

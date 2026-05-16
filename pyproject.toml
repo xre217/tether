@@ -14,6 +14,9 @@ dependencies = [
     "pydantic>=2.0.0",
     "httpx>=0.28.0",
     "tomlkit>=0.12.0",
+    "fastapi>=0.128.0",
+    "uvicorn>=0.39.0",
+    "gradio>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -45,8 +48,14 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/tether"]
 
-[tool.uv]
-dev-dependencies = [
+[tool.hatch.build.targets.sdist]
+include = ["src/tether/zero/tools/*.0"]
+
+[tool.hatch.build]
+artifacts = ["src/tether/zero/tools/*.0"]
+
+[dependency-groups]
+dev = [
     "pytest>=8.0.0",
     "mypy>=1.10.0",
     "ruff>=0.4.0",

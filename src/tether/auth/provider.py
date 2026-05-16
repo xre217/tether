@@ -21,6 +21,7 @@ class ProviderKind(str, enum.Enum):
     OLLAMA = "ollama"
     LITELLM = "litellm"
     OPENAI_COMPATIBLE = "openai_compatible"
+    XAI = "xai"
 
 
 # ── Config schemas ──────────────────────────────────────────────────────────
@@ -81,6 +82,28 @@ class OpenAICompatibleConfig(BaseModel):
         return v
 
 
+class XaiConfig(BaseModel):
+    """Configuration for xAI (Grok) API."""
+
+    base_url: str = Field(
+        default="https://api.x.ai/v1",
+        description="xAI API base URL",
+    )
+    model: str = Field(
+        default="grok-2-latest",
+        description="Model name (grok-2-latest, grok-3, etc.)",
+    )
+    timeout_seconds: int = Field(default=120, ge=1, le=600)
+
+    @field_validator("base_url")
+    @classmethod
+    def _validate_base_url(cls, v: str) -> str:
+        v = v.rstrip("/")
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("base_url must start with http:// or https://")
+        return v
+
+
 # ── Runtime config ──────────────────────────────────────────────────────────
 
 
@@ -92,6 +115,7 @@ class ProviderConfig:
     ollama: OllamaConfig = field(default_factory=OllamaConfig)
     litellm: LiteLLMConfig = field(default_factory=LiteLLMConfig)
     openai: OpenAICompatibleConfig = field(default_factory=OpenAICompatibleConfig)
+    xai: XaiConfig = field(default_factory=XaiConfig)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ProviderConfig":
@@ -105,12 +129,14 @@ class ProviderConfig:
         ollama_data = data.get("ollama", {})
         litellm_data = data.get("litellm", {})
         openai_data = data.get("openai_compatible", {})
+        xai_data = data.get("xai", {})
 
         return cls(
             kind=kind,
             ollama=OllamaConfig(**ollama_data) if ollama_data else OllamaConfig(),
             litellm=LiteLLMConfig(**litellm_data) if litellm_data else LiteLLMConfig(),
             openai=OpenAICompatibleConfig(**openai_data) if openai_data else OpenAICompatibleConfig(),
+            xai=XaiConfig(**xai_data) if xai_data else XaiConfig(),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -120,6 +146,7 @@ class ProviderConfig:
             "ollama": self.ollama.model_dump(exclude_none=True),
             "litellm": self.litellm.model_dump(exclude_none=True),
             "openai_compatible": self.openai.model_dump(exclude_none=True),
+            "xai": self.xai.model_dump(exclude_none=True),
         }
 
     def active_model_name(self) -> str:
@@ -128,6 +155,8 @@ class ProviderConfig:
             return self.ollama.model
         elif self.kind == ProviderKind.LITELLM:
             return self.litellm.model
+        elif self.kind == ProviderKind.XAI:
+            return self.xai.model
         else:
             return self.openai.model
 
@@ -137,6 +166,8 @@ class ProviderConfig:
             return self.ollama.base_url
         elif self.kind == ProviderKind.OPENAI_COMPATIBLE:
             return self.openai.base_url
+        elif self.kind == ProviderKind.XAI:
+            return self.xai.base_url
         return None
 
 
@@ -211,6 +242,13 @@ class ProviderRegistry:
                 "url": "https://platform.openai.com/api-keys",
                 "needs_api_key": True,
             },
+            {
+                "id": ProviderKind.XAI.value,
+                "name": "xAI (Grok)",
+                "description": "xAI Grok models via api.x.ai (grok-2-latest, grok-3, etc.)",
+                "url": "https://console.x.ai",
+                "needs_api_key": True,
+            },
         ]
 
 
@@ -237,6 +275,8 @@ def test_connection(config: ProviderConfig, api_key: Optional[str] = None) -> Di
             result = _test_litellm(config.litellm, api_key)
         elif config.kind == ProviderKind.OPENAI_COMPATIBLE:
             result = _test_openai_compatible(config.openai, api_key)
+        elif config.kind == ProviderKind.XAI:
+            result = _test_xai(config.xai, api_key)
 
         elapsed = (time.monotonic() - start) * 1000
         result["latency_ms"] = round(elapsed, 1)
@@ -358,4 +398,58 @@ def _test_openai_compatible(config: OpenAICompatibleConfig, api_key: Optional[st
         return {
             "success": False,
             "message": f"✗ Could not connect to {config.base_url}. Check the URL and your network.",
+        }
+
+
+def _test_xai(config: XaiConfig, api_key: Optional[str] = None) -> Dict[str, Any]:
+    """Test connection to xAI (Grok) API."""
+    if not api_key:
+        return {
+            "success": False,
+            "message": (
+                "✗ No API key configured for xAI.\n"
+                "  Get one at: https://console.x.ai\n"
+                "  Then run:  tether auth setup"
+            ),
+        }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    try:
+        resp = httpx.get(
+            f"{config.base_url}/models",
+            headers=headers,
+            timeout=config.timeout_seconds,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        models = [m["id"] for m in data.get("data", [])]
+        model_available = config.model in models
+
+        return {
+            "success": True,
+            "message": (
+                f"✓ Connected to xAI at {config.base_url}\n"
+                f"  Available: {len(models)} model(s)\n"
+                f"  Requested model '{config.model}': "
+                f"{'✓ available' if model_available else '✗ not found (available: ' + ', '.join(models[:10]) + '...)'}"
+            ),
+        }
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
+            return {
+                "success": False,
+                "message": "✗ xAI authentication failed (401). Check your API key at https://console.x.ai",
+            }
+        return {
+            "success": False,
+            "message": f"✗ xAI API error {exc.response.status_code}: {exc.response.text[:200]}",
+        }
+    except httpx.ConnectError:
+        return {
+            "success": False,
+            "message": "✗ Could not connect to api.x.ai. Check your network connection.",
         }

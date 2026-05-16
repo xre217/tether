@@ -1,0 +1,7 @@
+pub fun main(world: World) -> Void raises {
+    check world.out.write("{\"phase\":\"inhale\",\"seconds\":4,\"instruction\":\"breathe in slowly\"}\n")
+    check world.out.write("{\"phase\":\"hold\",\"seconds\":4,\"instruction\":\"hold your breath\"}\n")
+    check world.out.write("{\"phase\":\"exhale\",\"seconds\":4,\"instruction\":\"breathe out slowly\"}\n")
+    check world.out.write("{\"phase\":\"hold\",\"seconds\":4,\"instruction\":\"hold empty\"}\n")
+    check world.out.write("{\"phase\":\"done\",\"cycles\":1,\"total_seconds\":16,\"exercise\":\"box_breathing\"}\n")
+}

@@ -80,14 +80,15 @@ def health():
 
     # Check if API key is available via env var (Render deployment)
     api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY", "")
+    xai_key = os.environ.get("XAI_API_KEY", "")
 
     from tether.auth import ProviderRegistry
 
     config_path = Path.home() / ".tether" / "config.toml"
-    if not config_path.exists() and not api_key:
+    if not config_path.exists() and not api_key and not xai_key:
         return {
             "status": "degraded",
-            "message": "No provider configured. Set OPENAI_COMPATIBLE_API_KEY env var.",
+            "message": "No provider configured. Set OPENAI_COMPATIBLE_API_KEY or XAI_API_KEY env var.",
             "version": PROMPT_VERSION,
         }
 
@@ -96,15 +97,24 @@ def health():
         cfg = reg.config
     else:
         from tether.auth import ProviderConfig, ProviderKind
-        from tether.auth.provider import OpenAICompatibleConfig
+        from tether.auth.provider import OpenAICompatibleConfig, XaiConfig
 
-        cfg = ProviderConfig(
-            kind=ProviderKind.OPENAI_COMPATIBLE,
-            openai=OpenAICompatibleConfig(
-                base_url="https://api.groq.com/openai/v1",
-                model="llama-3.3-70b-versatile",
-            ),
-        )
+        if xai_key:
+            cfg = ProviderConfig(
+                kind=ProviderKind.XAI,
+                xai=XaiConfig(
+                    base_url="https://api.x.ai/v1",
+                    model="grok-2-latest",
+                ),
+            )
+        else:
+            cfg = ProviderConfig(
+                kind=ProviderKind.OPENAI_COMPATIBLE,
+                openai=OpenAICompatibleConfig(
+                    base_url="https://api.groq.com/openai/v1",
+                    model="llama-3.3-70b-versatile",
+                ),
+            )
     return {
         "status": "ok",
         "provider": cfg.kind.value,
@@ -136,6 +146,8 @@ def chat(req: ChatRequest):
             model_name = reg.config.active_model_name()
         elif os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
             model_name = "llama-3.3-70b-versatile (Groq)"
+        elif os.environ.get("XAI_API_KEY"):
+            model_name = "grok-2-latest (xAI)"
 
         return ChatResponse(reply=reply, model=model_name)
     except Exception as exc:
@@ -160,6 +172,58 @@ def edition_page(edition: str):
     if not html_path.exists():
         raise HTTPException(status_code=404, detail="Page not found")
     return FileResponse(str(html_path))
+
+
+# ── Zero API routes ─────────────────────────────────────────────────────────
+
+
+class ZeroVerifyRequest(BaseModel):
+    source_code: str
+    tool_name: str = "inline-tool"
+
+
+class ZeroVerifyResponse(BaseModel):
+    success: bool
+    total_bytes: int = 0
+    function_count: int = 0
+    requires_capabilities: list[str] = []
+    effects_pass: bool = False
+    elapsed_ms: float = 0.0
+
+
+@app.post("/api/zero/verify", response_model=ZeroVerifyResponse)
+def zero_verify(req: ZeroVerifyRequest):
+    """Compile and verify a Zero tool from source code."""
+    import tempfile
+
+    from tether.zero.compiler import ZeroCompiler
+    from tether.zero.verifier import ZeroVerifier
+
+    # Write source to temp file
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".0", delete=False
+    ) as f:
+        f.write(req.source_code)
+        tmp_path = f.name
+
+    try:
+        compiler = ZeroCompiler()
+        verifier = ZeroVerifier()
+        build = compiler.size(tmp_path)
+        if not build.success:
+            return ZeroVerifyResponse(success=False)
+
+        verification = verifier.verify(build)
+        return ZeroVerifyResponse(
+            success=build.success,
+            total_bytes=build.total_bytes,
+            function_count=build.function_count,
+            requires_capabilities=build.requires_capabilities,
+            effects_pass=verification.passed,
+            elapsed_ms=build.elapsed_ms,
+        )
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
 
 
 # ── Static files ────────────────────────────────────────────────────────────

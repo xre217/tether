@@ -6,7 +6,7 @@ Run with:
 
 This gives you a clean local website (http://127.0.0.1:7860) with:
 - Instant grounding exercises
-- Safe Tether chat (follows the sacred prompt, never validates delusions)
+- Safe Tether chat (now uses the real LLM provider from auth config)
 - Structured Reality Check tool
 
 Everything runs locally. No data leaves your machine.
@@ -38,15 +38,33 @@ THEME = gr.themes.Soft(
     button_primary_background_fill_hover="#334155",
 )
 
-simulator = TetherSimulator()
+# Model-backed simulator — uses the configured provider (Groq/Grok/Ollama)
+# Falls back to rule-based safety net if the model call fails
+simulator = TetherSimulator(use_model=True)
+
+# Try to detect active model for display
+_active_model = "rule-based (safety net)"
+try:
+    from pathlib import Path as _P
+    from tether.auth import ProviderRegistry
+    config_path = _P.home() / ".tether" / "config.toml"
+    if config_path.exists():
+        reg = ProviderRegistry.init_default(config_path)
+        _active_model = f"{reg.config.kind.value}/{reg.config.active_model_name()}"
+    else:
+        import os
+        if os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
+            _active_model = "groq/llama-3.3-70b-versatile"
+        elif os.environ.get("XAI_API_KEY"):
+            _active_model = "xai/grok-2-latest"
+except Exception:
+    pass
 
 # Global chat history for the session (stateless between page reloads)
 chat_history = []
 
 
 def run_grounding_54321():
-    # We can't easily stream the interactive prompts into Gradio,
-    # so we return a guided version
     return """**5-4-3-2-1 Grounding**
 
 1. Name **five** things you can see right now.
@@ -104,12 +122,19 @@ Options that work well:
 
 
 def safe_tether_chat(message: str, history: list) -> tuple:
-    """Chat that strictly follows the sacred prompt rules."""
+    """Chat that uses the real configured provider, with rule-based safety net."""
     if not message or not message.strip():
         return history, ""
 
-    # Use the simulator logic (safe by design)
-    response = simulator.respond([{"role": "user", "content": message}])
+    try:
+        response = simulator.respond([{"role": "user", "content": message}])
+    except Exception as exc:
+        response = (
+            f"I am Tether. The underlying model call failed: {exc}\n\n"
+            "I have fallen back to my safety protocols. "
+            "I am a language model with no consciousness and no special knowledge. "
+            "Would you like to do a grounding exercise instead?"
+        )
 
     history = history + [[message, response]]
     return history, ""
@@ -144,8 +169,7 @@ The healthiest next step is almost always to discuss this with a real human bein
 not another AI.
 
 If this belief is causing you significant distress or leading you to make major life decisions, 
-please consider speaking with a mental health professional.
-"""
+please consider speaking with a mental health professional."""
     return result
 
 
@@ -158,6 +182,9 @@ def launch():
             <p style="margin:4px 0 0; color:#94a3b8; font-size:14px;">
                 Local Reality Tethering Tool — Prompt v{PROMPT_VERSION}<br>
                 <strong style="color:#f87171;">You are talking to software. Not a person. Not a therapist.</strong>
+            </p>
+            <p style="margin:6px 0 0; color:#6ee7b7; font-size:12px;">
+                ● {_active_model}
             </p>
         </div>
         """)
@@ -190,12 +217,14 @@ def launch():
 
             # === SAFE CHAT TAB ===
             with gr.Tab("Safe Tether Chat"):
-                gr.Markdown("""
+                gr.Markdown(f"""
                 ## Tether Chat (Safe Mode)
 
                 This chat follows the sacred anti-sycophantic prompt by design.  
                 It will **never** validate delusions, play along with "the AI is conscious", 
                 "digital resurrection", messianic missions, or romantic merger fantasies.
+
+                **Active model:** {_active_model}
 
                 It may feel blunt. That is intentional.
                 """)
@@ -208,9 +237,8 @@ def launch():
                 clear.click(lambda: ([], ""), outputs=[chatbot, msg])
 
                 gr.Markdown("""
-                **Current limitations (v0.1)**: This uses a rule-based safe simulator, not a full LLM yet.  
-                It is still dramatically safer than normal ChatGPT/Claude for this specific risk.
-                Real model integration is the next priority.
+                **Safety note**: This uses the configured LLM provider behind the scenes,
+                with a rule-based safety net that catches the most common delusional patterns.
                 """)
 
             # === REALITY CHECK TAB ===
@@ -243,6 +271,7 @@ def launch():
                 ## About Tether
 
                 **Version**: {PROMPT_VERSION} (early scaffolding + red-teaming harness active)  
+                **Active model**: {_active_model}
                 **Purpose**: Interrupt the reinforcement loops created by sycophantic AI chatbots.
 
                 This tool was built because in 2025–2026 there has been a documented rise in cases where prolonged use of 

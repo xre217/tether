@@ -76,6 +76,9 @@ class CredentialStore:
         ProviderKind.OPENAI_COMPATIBLE.value: [
             {"key": "api_key", "label": "API Key"},
         ],
+        ProviderKind.XAI.value: [
+            {"key": "api_key", "label": "xAI API Key (get one at https://console.x.ai)"},
+        ],
     }
 
     def __init__(self) -> None:

@@ -53,14 +53,24 @@ class TetherSimulator:
         """Lazy-load the provider registry from auth config or env vars."""
         if self._provider_registry is None:
             from tether.auth import ProviderConfig, ProviderKind, ProviderRegistry
-            from tether.auth.provider import OpenAICompatibleConfig
+            from tether.auth.provider import OpenAICompatibleConfig, XaiConfig
 
             config_path = Path.home() / ".tether" / "config.toml"
             import os
 
             api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY", "")
+            xai_api_key = os.environ.get("XAI_API_KEY", "")
             if config_path.exists():
                 registry = ProviderRegistry.init_default(config_path)
+            elif xai_api_key:
+                cfg = ProviderConfig(
+                    kind=ProviderKind.XAI,
+                    xai=XaiConfig(
+                        base_url="https://api.x.ai/v1",
+                        model="grok-2-latest",
+                    ),
+                )
+                registry = ProviderRegistry(cfg)
             elif api_key:
                 # Deploy mode — env var only, no local config
                 cfg = ProviderConfig(
@@ -127,6 +137,36 @@ class TetherSimulator:
         data = resp.json()
         return data["choices"][0]["message"]["content"]
 
+    def _call_xai(self, history: List[dict]) -> str:
+        """Call xAI Grok API."""
+        from tether.auth import ProviderRegistry
+        from tether.auth.credentials import CredentialStore
+
+        registry = self._resolve_provider()
+        cfg = registry.config
+        store = CredentialStore()
+        api_key = store.require(cfg.kind.value, "api_key")
+
+        messages = [{"role": "system", "content": self.system_prompt}] + history
+
+        resp = httpx.post(
+            f"{cfg.xai.base_url}/chat/completions",
+            json={
+                "model": cfg.xai.model,
+                "messages": messages,
+                "max_tokens": 1024,
+                "temperature": 0.7,
+            },
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=cfg.xai.timeout_seconds,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
     def _call_litellm(self, history: List[dict]) -> str:
         """Call via LiteLLM (requires litellm package)."""
         from tether.auth.credentials import CredentialStore
@@ -183,6 +223,8 @@ class TetherSimulator:
                 return self._call_openai_compatible(history)
             elif cfg.kind == ProviderKind.LITELLM:
                 return self._call_litellm(history)
+            elif cfg.kind == ProviderKind.XAI:
+                return self._call_xai(history)
 
             return None
         except Exception as exc:

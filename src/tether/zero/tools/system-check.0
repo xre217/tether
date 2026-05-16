@@ -1,0 +1,3 @@
+pub fun main(world: World) -> Void raises {
+    check world.out.write("{\"kind\":\"system_check\",\"facts\":{\"message\":\"tether zero tool ready\",\"zero_version\":\"0.1.1\",\"target\":\"darwin-arm64\"}}\n")
+}
