@@ -18,6 +18,7 @@ show_help() {
     echo "  ./tether anime       Start the dramatic Anime Edition"
     echo "  ./tether serious     Start the clean Serious Edition"
     echo "  ./tether chat        Chat with Groq/LLM in terminal"
+    echo "  ./tether ground      Run a grounding exercise (no LLM needed)"
     echo "  ./tether web         Start the public web server"
     echo "  ./tether redteam     Run the red-teaming harness"
     echo "  ./tether help        Show this message"
@@ -74,6 +75,12 @@ run_web() {
     PYTHONPATH="$DIR/src" "$DIR/.venv/bin/python" -m uvicorn tether.web.server:app --reload --port 8080
 }
 
+run_ground() {
+    technique="${2:-54321}"
+    echo "Tether — Grounding: $technique"
+    PYTHONPATH="$DIR/src" "$DIR/.venv/bin/python" -m tether.cli.main ground "$technique"
+}
+
 case "${1:-help}" in
     anime|a)
         start_anime
@@ -83,6 +90,9 @@ case "${1:-help}" in
         ;;
     chat|c)
         run_chat
+        ;;
+    ground|g)
+        run_ground "$@"
         ;;
     web|w)
         run_web
