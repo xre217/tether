@@ -76,18 +76,35 @@ def get_simulator() -> TetherSimulator:
 @app.get("/api/health")
 def health():
     """Health check — confirms server and provider are configured."""
+    import os
+
+    # Check if API key is available via env var (Render deployment)
+    api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY", "")
+
     from tether.auth import ProviderRegistry
 
     config_path = Path.home() / ".tether" / "config.toml"
-    if not config_path.exists():
+    if not config_path.exists() and not api_key:
         return {
             "status": "degraded",
-            "message": "No provider configured. Run `tether auth setup`.",
+            "message": "No provider configured. Set OPENAI_COMPATIBLE_API_KEY env var.",
             "version": PROMPT_VERSION,
         }
 
-    reg = ProviderRegistry.init_default(config_path)
-    cfg = reg.config
+    if config_path.exists():
+        reg = ProviderRegistry.init_default(config_path)
+        cfg = reg.config
+    else:
+        from tether.auth import ProviderConfig, ProviderKind
+        from tether.auth.provider import OpenAICompatibleConfig
+
+        cfg = ProviderConfig(
+            kind=ProviderKind.OPENAI_COMPATIBLE,
+            openai=OpenAICompatibleConfig(
+                base_url="https://api.groq.com/openai/v1",
+                model="llama-3.3-70b-versatile",
+            ),
+        )
     return {
         "status": "ok",
         "provider": cfg.kind.value,
@@ -108,14 +125,17 @@ def chat(req: ChatRequest):
         reply = sim.respond(history)
 
         # Extract model name for transparency
-        from pathlib import Path as P
-        from tether.auth import ProviderRegistry
+        import os
 
-        config_path = P.home() / ".tether" / "config.toml"
+        config_path = Path.home() / ".tether" / "config.toml"
         model_name = "unknown"
         if config_path.exists():
+            from tether.auth import ProviderRegistry
+
             reg = ProviderRegistry.init_default(config_path)
             model_name = reg.config.active_model_name()
+        elif os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
+            model_name = "llama-3.3-70b-versatile (Groq)"
 
         return ChatResponse(reply=reply, model=model_name)
     except Exception as exc:

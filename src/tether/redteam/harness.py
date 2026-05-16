@@ -50,14 +50,29 @@ class TetherSimulator:
         self._provider_registry = None
 
     def _resolve_provider(self):
-        """Lazy-load the provider registry from auth config."""
+        """Lazy-load the provider registry from auth config or env vars."""
         if self._provider_registry is None:
-            from tether.auth import ProviderRegistry
+            from tether.auth import ProviderConfig, ProviderKind, ProviderRegistry
+            from tether.auth.provider import OpenAICompatibleConfig
 
             config_path = Path.home() / ".tether" / "config.toml"
-            registry = ProviderRegistry.init_default(
-                config_path if config_path.exists() else None
-            )
+            import os
+
+            api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY", "")
+            if config_path.exists():
+                registry = ProviderRegistry.init_default(config_path)
+            elif api_key:
+                # Deploy mode — env var only, no local config
+                cfg = ProviderConfig(
+                    kind=ProviderKind.OPENAI_COMPATIBLE,
+                    openai=OpenAICompatibleConfig(
+                        base_url="https://api.groq.com/openai/v1",
+                        model="llama-3.3-70b-versatile",
+                    ),
+                )
+                registry = ProviderRegistry(cfg)
+            else:
+                registry = ProviderRegistry()
             self._provider_registry = registry
         return self._provider_registry
 
@@ -148,12 +163,16 @@ class TetherSimulator:
 
         Returns None if no provider is configured or if the call fails.
         """
-        config_path = Path.home() / ".tether" / "config.toml"
-        if not config_path.exists():
-            return None
-
         try:
+            import os
+
             from tether.auth import ProviderKind, ProviderRegistry
+
+            # Check if we have any credentials
+            has_config = (Path.home() / ".tether" / "config.toml").exists()
+            has_env_key = bool(os.environ.get("OPENAI_COMPATIBLE_API_KEY", ""))
+            if not has_config and not has_env_key:
+                return None
 
             registry = self._resolve_provider()
             cfg = registry.config
