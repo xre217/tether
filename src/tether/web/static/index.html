@@ -97,10 +97,11 @@
         <div id="home">
             <div style="margin-bottom: 40px; opacity: 0.4; font-size: 13px; letter-spacing: 2px;">TETHER</div>
             <div class="actions">
-                <div class="action" onclick="enter('speak')">speak</div>
-                <div class="action" onclick="enter('check')">check</div>
-                <div class="action" onclick="enter('about')">about</div>
+                <div class="action" onclick="enter('speak')"><span style="opacity:0.25; font-size:12px;">[s]</span> speak</div>
+                <div class="action" onclick="enter('check')"><span style="opacity:0.25; font-size:12px;">[c]</span> check</div>
+                <div class="action" onclick="enter('about')"><span style="opacity:0.25; font-size:12px;">[a]</span> about</div>
             </div>
+            <div style="margin-top: 60px; opacity: 0.15; font-size: 11px;">esc to go back &middot; /commands in speak</div>
         </div>
 
         <!-- SPEAK -->
@@ -109,7 +110,7 @@
             <div id="speak-log" class="log">
                 <div style="opacity:0.4; margin-top:60px;">tether is ready</div>
             </div>
-            <input id="speak-input" class="input" placeholder="say something" onkeypress="if(event.key==='Enter') sendToTether()" autocomplete="off">
+            <input id="speak-input" class="input" placeholder="/home /ground /breath /check  or just type" onkeypress="if(event.key==='Enter') sendToTether()" autocomplete="off">
         </div>
 
         <!-- CHECK -->
@@ -343,6 +344,85 @@
                 text.textContent = 'server unreachable';
                 miniText.textContent = 'offline';
             }
+        }
+
+        // ==================== KEYBOARD NAVIGATION ====================
+        let currentSection = 'home';
+
+        // Override enter/leave to track current section
+        const _origEnter = enter;
+        enter = function(section) {
+            currentSection = section;
+            _origEnter(section);
+        };
+        const _origLeave = leave;
+        leave = function() {
+            currentSection = 'home';
+            _origLeave();
+        };
+
+        document.addEventListener('keydown', function(e) {
+            // Don't intercept typing in text inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                // But still catch /commands in speak input
+                if (e.target.id === 'speak-input' && e.key === 'Enter') {
+                    const val = e.target.value.trim();
+                    if (val.startsWith('/')) return; // handled below
+                }
+                return;
+            }
+
+            // Single-key navigation from home
+            if (currentSection === 'home') {
+                const keyMap = {
+                    's': 'speak', '1': 'speak',
+                    'c': 'check', '2': 'check',
+                    'a': 'about', '3': 'about',
+                };
+                if (keyMap[e.key.toLowerCase()]) {
+                    enter(keyMap[e.key.toLowerCase()]);
+                    return;
+                }
+                return;
+            }
+
+            // Escape / backspace to go home
+            if (e.key === 'Escape' || e.key === 'Backspace') {
+                leave();
+                e.preventDefault();
+            }
+        });
+
+        // Handle /commands typed in the speak input
+        document.getElementById('speak-input').addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter') return;
+            const val = this.value.trim().toLowerCase();
+            if (val === '/home' || val === '/back' || val === '/leave') {
+                leave();
+                this.value = '';
+                e.preventDefault();
+            } else if (val === '/check' || val === '/about') {
+                enter(val.replace('/', ''));
+                this.value = '';
+                e.preventDefault();
+            } else if (val === '/ground' || val === '/54321') {
+                addToLog('tether', '5-4-3-2-1 grounding:\n\nName 5 things you can see.\nName 4 things you can feel.\nName 3 things you can hear.\nName 2 things you can smell.\nName 1 thing you can taste.\n\nYou are here.');
+                this.value = '';
+                e.preventDefault();
+            } else if (val === '/breath' || val === '/breathe') {
+                addToLog('tether', 'Physiological sigh:\n\nDeep breath in through your nose.\nOne more small sip of air.\nLong slow exhale through your mouth.\n\nRepeat 3 times. Your nervous system just got the signal.');
+                this.value = '';
+                e.preventDefault();
+            }
+        });
+
+        function addToLog(role, text) {
+            const log = document.getElementById('speak-log');
+            if (log.innerHTML === '<div style="opacity:0.4; margin-top:0;">tether is ready</div>') {
+                log.innerHTML = '';
+            }
+            log.innerHTML += `<div style="margin: 8px 0 18px;"><span style="opacity:0.4">${role}</span><br>${escapeHtml(text)}</div>`;
+            log.scrollTop = log.scrollHeight;
         }
 
         // ==================== INIT ====================
