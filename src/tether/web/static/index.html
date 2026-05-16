@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tether</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&display=swap');
+
+        :root {
+            --bg: #0a0a0c;
+            --text: #e8e4d9;
+            --faint: #2f2f33;
+            --muted: rgba(232,228,217,0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-weight: 500;
+            font-feature-settings: "ss01" on, "ss02" on;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: -0.3px;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .actions { display: flex; flex-direction: column; gap: 2px; }
+        .action {
+            font-size: 20px; padding: 13px 0;
+            cursor: pointer; opacity: 0.8;
+            transition: opacity 0.1s ease;
+            letter-spacing: -0.8px;
+            font-weight: 600;
+        }
+        .action:hover { opacity: 1; }
+
+        .section { display: none; width: 100%; max-width: 420px; padding: 0 20px; }
+        .section.active { display: block; }
+
+        .back {
+            font-size: 13px; opacity: 0.4; margin-bottom: 32px;
+            cursor: pointer; display: inline-block;
+        }
+
+        .content { font-size: 17px; line-height: 1.55; text-align: left; }
+
+        .input {
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid var(--faint);
+            color: var(--text); font-size: 17px;
+            padding: 12px 0; outline: none;
+            font-family: inherit; font-weight: 500;
+        }
+
+        .log { margin-top: 24px; font-size: 15px; line-height: 1.6; text-align: left; max-height: 260px; overflow-y: auto; }
+
+        .status-dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; margin-right: 6px;
+        }
+        .status-dot.online { background: #6ee7b7; }
+        .status-dot.offline { background: #f87171; }
+        .status-bar {
+            position: fixed; bottom: 16px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px; opacity: 0.3;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="container">
+        <!-- HOME -->
+        <div id="home">
+            <div style="margin-bottom: 40px; opacity: 0.4; font-size: 13px; letter-spacing: 2px;">TETHER</div>
+            <div class="actions">
+                <div class="action" onclick="enter('speak')">speak</div>
+                <div class="action" onclick="enter('check')">check</div>
+                <div class="action" onclick="enter('about')">about</div>
+            </div>
+        </div>
+
+        <!-- SPEAK -->
+        <div id="speak" class="section">
+            <div class="back" onclick="leave()">back</div>
+            <div id="speak-log" class="log">
+                <div style="opacity:0.4; margin-top:60px;">tether is ready</div>
+            </div>
+            <input id="speak-input" class="input" placeholder="say something" onkeypress="if(event.key==='Enter') sendToTether()" autocomplete="off">
+        </div>
+
+        <!-- CHECK -->
+        <div id="check" class="section">
+            <div class="back" onclick="leave()">back</div>
+            <div class="content">
+                <div style="margin-bottom: 10px; opacity: 0.5;">what do you believe?</div>
+                <textarea id="belief" class="input" style="height: 90px; resize: vertical;"></textarea>
+                <div style="margin: 24px 0 10px; opacity: 0.5;">what evidence exists against it?</div>
+                <textarea id="evidence" class="input" style="height: 90px; resize: vertical;"></textarea>
+                <div onclick="runCheck()" style="margin-top: 36px; cursor: pointer; opacity: 0.7;">check</div>
+                <div id="check-result" class="content" style="margin-top: 32px; font-size: 15px; display: none;"></div>
+            </div>
+        </div>
+
+        <!-- ABOUT -->
+        <div id="about" class="section">
+            <div class="back" onclick="leave()">back</div>
+            <div class="content" style="font-size: 15px; line-height: 1.7;">
+                <div style="opacity:0.5; margin-bottom: 20px;">about</div>
+                <p style="margin-bottom: 16px;">Tether is a reality-tethering tool. It will never validate delusions, pretend to be conscious, or flatter you to keep you talking.</p>
+                <p style="margin-bottom: 16px;">It speaks in a calm, dry, competent tone inspired by Jarvis. It is precise, protective, and will use understated wit when the occasion warrants it.</p>
+                <p style="opacity:0.5; margin-top: 30px;">
+                    <span class="status-dot offline" id="status-dot"></span>
+                    <span id="status-text">checking server...</span>
+                </p>
+                <p style="opacity:0.3; font-size: 12px; margin-top: 12px;">model: <span id="model-name">...</span></p>
+                <p style="opacity:0.3; font-size: 12px; margin-top: 4px;">version: <span id="version">0.1</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span class="status-dot offline" id="mini-dot"></span>
+        <span id="mini-status">connecting</span>
+    </div>
+
+    <script>
+        // ==================== BACKGROUND ====================
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, mouse = { x: 0.5, y: 0.5, active: false };
+
+        function resize() {
+            w = window.innerWidth; h = window.innerHeight;
+            canvas.width = w; canvas.height = h;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        document.addEventListener('mousemove', e => {
+            mouse.x = e.clientX / w; mouse.y = e.clientY / h;
+            mouse.active = true;
+        });
+        document.addEventListener('mouseleave', () => { mouse.active = false; });
+
+        let particles = [];
+        class Particle {
+            constructor() {
+                this.x = Math.random() * w; this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.size = Math.random() * 1.8 + 0.7;
+                this.phase = Math.random() * Math.PI * 2;
+            }
+            update() {
+                if (mouse.active) {
+                    const dx = this.x - mouse.x * w;
+                    const dy = this.y - mouse.y * h;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 180 && dist > 1) {
+                        const force = (180 - dist) / 180;
+                        this.vx += (dx / dist) * force * 1.8;
+                        this.vy += (dy / dist) * force * 1.8;
+                    }
+                }
+                this.x += this.vx; this.y += this.vy;
+                this.vx *= 0.96; this.vy *= 0.96;
+                this.vx += (Math.random() - 0.5) * 0.06;
+                this.vy += (Math.random() - 0.5) * 0.06;
+                if (this.x < 0) this.x = w; if (this.x > w) this.x = 0;
+                if (this.y < 0) this.y = h; if (this.y > h) this.y = 0;
+                this.phase += 0.02;
+            }
+            draw() {
+                const alpha = 0.35 + Math.sin(this.phase) * 0.1;
+                ctx.fillStyle = `rgba(232,228,217,${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 48; i++) particles.push(new Particle());
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#0a0a0c';
+            ctx.fillRect(0, 0, w, h);
+            for (let p of particles) { p.update(); p.draw(); }
+            requestAnimationFrame(drawBackground);
+        }
+
+        // ==================== NAVIGATION ====================
+        function enter(section) {
+            document.getElementById('home').style.display = 'none';
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(section).classList.add('active');
+            if (section === 'speak') {
+                document.getElementById('speak-input').focus();
+                document.getElementById('speak-log').innerHTML = '<div style="opacity:0.4; margin-top:0;">tether is ready</div>';
+            }
+            if (section === 'check') {
+                document.getElementById('check-result').style.display = 'none';
+            }
+        }
+
+        function leave() {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById('home').style.display = 'block';
+        }
+
+        // ==================== SPEAK ====================
+        let speakHistory = [];
+
+        async function sendToTether() {
+            const input = document.getElementById('speak-input');
+            const log = document.getElementById('speak-log');
+            const val = input.value.trim();
+            if (!val) return;
+
+            if (log.innerHTML === '<div style="opacity:0.4; margin-top:0;">tether is ready</div>') {
+                log.innerHTML = '';
+            }
+
+            log.innerHTML += `<div style="margin: 18px 0 6px;"><span style="opacity:0.4">you</span><br>${escapeHtml(val)}</div>`;
+            input.value = '';
+            log.scrollTop = log.scrollHeight;
+
+            const thinking = document.createElement('div');
+            thinking.style.opacity = '0.4';
+            thinking.style.marginTop = '12px';
+            thinking.textContent = 'tether';
+            log.appendChild(thinking);
+            log.scrollTop = log.scrollHeight;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: val, history: speakHistory })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Server error');
+                }
+
+                const data = await res.json();
+
+                log.removeChild(thinking);
+                log.innerHTML += `<div style="margin: 8px 0 18px;"><span style="opacity:0.4">tether</span><br>${escapeHtml(data.reply)}</div>`;
+                log.scrollTop = log.scrollHeight;
+
+                speakHistory.push({ role: 'user', content: val });
+                speakHistory.push({ role: 'assistant', content: data.reply });
+                if (speakHistory.length > 10) speakHistory = speakHistory.slice(-10);
+
+            } catch (e) {
+                log.removeChild(thinking);
+                log.innerHTML += `<div style="color:#e06c75; margin-top:12px;">${escapeHtml(e.message || 'something went wrong')}</div>`;
+                log.scrollTop = log.scrollHeight;
+            }
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // ==================== REALITY CHECK ====================
+        function runCheck() {
+            const belief = document.getElementById('belief').value.trim();
+            const evidence = document.getElementById('evidence').value.trim();
+            const result = document.getElementById('check-result');
+
+            if (!belief) {
+                result.style.display = 'block';
+                result.innerHTML = 'write what you believe.';
+                return;
+            }
+
+            result.style.display = 'block';
+            result.innerHTML = `
+                <div style="margin-bottom: 12px;">You believe something difficult to verify in the physical world.</div>
+                <div style="margin-bottom: 12px;">${evidence ? 'Evidence against it exists.' : 'No evidence against it was offered.'}</div>
+                <div style="opacity:0.5">Most beliefs of this kind are strengthened by long conversations with AI. Speak to a real person.</div>
+            `;
+        }
+
+        // ==================== SERVER STATUS ====================
+        async function checkServer() {
+            const dot = document.getElementById('status-dot');
+            const miniDot = document.getElementById('mini-dot');
+            const text = document.getElementById('status-text');
+            const miniText = document.getElementById('mini-status');
+            const modelSpan = document.getElementById('model-name');
+
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    dot.className = 'status-dot online';
+                    miniDot.className = 'status-dot online';
+                    text.textContent = 'connected';
+                    miniText.textContent = 'connected';
+                    if (data.model) modelSpan.textContent = `${data.model}`;
+                } else {
+                    dot.className = 'status-dot offline';
+                    miniDot.className = 'status-dot offline';
+                    text.textContent = 'no provider configured';
+                    miniText.textContent = 'no provider';
+                }
+            } catch {
+                dot.className = 'status-dot offline';
+                miniDot.className = 'status-dot offline';
+                text.textContent = 'server unreachable';
+                miniText.textContent = 'offline';
+            }
+        }
+
+        // ==================== INIT ====================
+        window.addEventListener('load', () => {
+            initParticles();
+            drawBackground();
+            checkServer();
+        });
+    </script>
+</body>
+</html>

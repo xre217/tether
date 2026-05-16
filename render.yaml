@@ -1,0 +1,15 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: tether
+    runtime: python
+    repo: https://github.com/YOUR_USERNAME/tether  # ← change this
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements-deploy.txt
+    startCommand: PYTHONPATH=src uvicorn tether.web.server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_COMPATIBLE_API_KEY
+        sync: false  # You'll enter this manually in Render dashboard
+      - key: PYTHON_VERSION
+        value: 3.11.11

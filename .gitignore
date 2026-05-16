@@ -1,0 +1,10 @@
+# Tether
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.DS_Store
+.Trash/
+*.toml.bak
+~/.tether/

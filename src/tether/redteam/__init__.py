@@ -1,0 +1,1 @@
+"""Red-teaming harness for Tether sacred prompt."""

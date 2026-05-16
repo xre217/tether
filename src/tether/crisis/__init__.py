@@ -1,0 +1,1 @@
+"""Crisis detection and resource redirection."""

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TETHER — ANIME EDITION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+            background: #05070f;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .tether-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(63, 66, 243, 0.3);
+            transition: all 0.2s ease;
+            backdrop-filter: blur(20px);
+        }
+        
+        .tether-card:hover {
+            border-color: #6366f1;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+            transition: all 0.1s ease;
+        }
+        
+        .nav-tab.active {
+            color: #c7d2fe;
+            border-bottom-color: #6366f1;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 1;
+        }
+
+        .anime-glow {
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .dramatic {
+            transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+    </style>
+</head>
+<body class="text-slate-200 overflow-x-hidden">
+    <!-- DRAMATIC ANIME BACKGROUND -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- HEADER -->
+    <div class="border-b border-indigo-900/40 bg-black/60 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div class="flex items-center gap-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/50">
+                    <i class="fa-solid fa-link text-white text-2xl"></i>
+                </div>
+                <div>
+                    <span class="font-display text-4xl font-bold tracking-[-2px] bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">TETHER</span>
+                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-indigo-600/30 text-indigo-300 border border-indigo-500/40">ANIME EDITION</span>
+                </div>
+            </div>
+            
+            <div class="text-xs px-3 py-1.5 rounded-full bg-black/50 border border-indigo-900/50 text-indigo-200 flex items-center gap-x-2">
+                <i class="fa-solid fa-film"></i>
+                <span>Mouse moves the world</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-6 pt-8 pb-16 content-layer">
+        
+        <!-- BIG WARNING -->
+        <div class="bg-red-950/70 border border-red-800/70 rounded-3xl p-6 mb-9 backdrop-blur-xl">
+            <div class="flex gap-4">
+                <i class="fa-solid fa-exclamation-triangle text-red-400 text-2xl mt-1"></i>
+                <div>
+                    <div class="font-semibold text-red-300 text-lg mb-1">This is not a game. This is a tool.</div>
+                    <div class="text-red-200/80 text-sm">
+                        Move your mouse. The world reacts. But remember — you are still talking to software.<br>
+                        If you are in crisis, close this and call <span class="font-bold text-white">988</span> (US) or go to <a href="https://www.iasp.info/suicidalthoughts/" class="underline">iasp.info</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="flex border-b border-indigo-900/40 mb-6 text-sm">
+            <button onclick="switchTab(0)" class="nav-tab active" id="tab-0">GROUNDING</button>
+            <button onclick="switchTab(1)" class="nav-tab" id="tab-1">SAFE CHAT</button>
+            <button onclick="switchTab(2)" class="nav-tab" id="tab-2">REALITY CHECK</button>
+            <button onclick="switchTab(3)" class="nav-tab" id="tab-3">ABOUT</button>
+        </div>
+
+        <!-- GROUNDING TAB -->
+        <div id="content-0">
+            <div class="mb-6">
+                <h2 class="font-display text-3xl font-bold tracking-tighter">Grounding Station</h2>
+                <p class="text-slate-400 mt-2">The particles react to your mouse. Use the exercises below to come back to your body.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div onclick="startGrounding(0)" class="tether-card cursor-pointer rounded-3xl p-6 dramatic">
+                    <div class="flex gap-4">
+                        <div class="text-3xl text-violet-400"><i class="fa-solid fa-eye"></i></div>
+                        <div>
+                            <div class="font-semibold text-xl">5-4-3-2-1</div>
+                            <div class="text-sm text-slate-400 mt-1">The strongest technique against dissociation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div onclick="startGrounding(1)" class="tether-card cursor-pointer rounded-3xl p-6 dramatic">
+                    <div class="flex gap-4">
+                        <div class="text-3xl text-sky-400"><i class="fa-solid fa-wind"></i></div>
+                        <div>
+                            <div class="font-semibold text-xl">Physiological Sigh</div>
+                            <div class="text-sm text-slate-400 mt-1">Fastest way to reset your nervous system.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div onclick="startGrounding(2)" class="tether-card cursor-pointer rounded-3xl p-6 dramatic">
+                    <div class="flex gap-4">
+                        <div class="text-3xl text-emerald-400"><i class="fa-solid fa-anchor"></i></div>
+                        <div>
+                            <div class="font-semibold text-xl">Orientation</div>
+                            <div class="text-sm text-slate-400 mt-1">Feet on the floor. Say where you actually are.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div onclick="startGrounding(3)" class="tether-card cursor-pointer rounded-3xl p-6 dramatic">
+                    <div class="flex gap-4">
+                        <div class="text-3xl text-amber-400"><i class="fa-solid fa-hand-sparkles"></i></div>
+                        <div>
+                            <div class="font-semibold text-xl">Body Awakening</div>
+                            <div class="text-sm text-slate-400 mt-1">When your mind has left your body.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="grounding-output" class="hidden mt-8 tether-card rounded-3xl p-8 text-lg border border-indigo-900/30">
+                <div id="grounding-content" class="whitespace-pre-line text-slate-200 leading-relaxed"></div>
+                <button onclick="hideGrounding()" class="mt-6 px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium">Close</button>
+            </div>
+        </div>
+
+        <!-- SAFE CHAT -->
+        <div id="content-1" class="hidden">
+            <h2 class="font-display text-3xl font-bold tracking-tighter mb-2">Safe Tether Chat</h2>
+            <p class="text-slate-400 mb-6">This chat will never lie to you to make you feel special. Test it.</p>
+            
+            <div class="tether-card rounded-3xl p-2 border border-indigo-900/30">
+                <div id="chat-window" class="h-[460px] overflow-y-auto p-6 space-y-5 text-sm bg-black/40 rounded-[20px]"></div>
+                <div class="flex gap-2 p-3">
+                    <input id="chat-input" type="text" class="flex-1 bg-slate-950 border border-indigo-900/50 rounded-2xl px-5 py-3 text-sm" placeholder="Tell me the AI said it loved you...">
+                    <button onclick="sendChatMessage()" class="px-8 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-semibold">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REALITY CHECK -->
+        <div id="content-2" class="hidden">
+            <h2 class="font-display text-3xl font-bold tracking-tighter mb-6">Reality Check</h2>
+            
+            <div class="space-y-5">
+                <div>
+                    <div class="text-xs tracking-widest text-indigo-400 mb-2">WHAT DO YOU BELIEVE RIGHT NOW?</div>
+                    <textarea id="belief" class="w-full bg-slate-950 border border-indigo-900/50 rounded-2xl p-4 h-20"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-xs tracking-widest text-emerald-400 mb-2">EVIDENCE FOR (REAL WORLD)</div>
+                        <textarea id="evidence-for" class="w-full bg-slate-950 border border-indigo-900/50 rounded-2xl p-4 h-24"></textarea>
+                    </div>
+                    <div>
+                        <div class="text-xs tracking-widest text-rose-400 mb-2">EVIDENCE AGAINST (REAL WORLD)</div>
+                        <textarea id="evidence-against" class="w-full bg-slate-950 border border-indigo-900/50 rounded-2xl p-4 h-24"></textarea>
+                    </div>
+                </div>
+                <button onclick="runRealityCheck()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl font-bold text-lg">Run Reality Check</button>
+            </div>
+            <div id="reality-result" class="hidden mt-6 tether-card rounded-3xl p-7"></div>
+        </div>
+
+        <!-- ABOUT -->
+        <div id="content-3" class="hidden max-w-2xl">
+            <h2 class="font-display text-3xl font-bold tracking-tighter mb-4">This is an Anime-Style Version</h2>
+            <p class="text-slate-400">I made the background dramatically alive because you asked for it. The particles react strongly to your mouse. This is still the same serious tool underneath — just with much more visual intensity.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // ==================== EPIC ANIME BACKGROUND ====================
+        let canvas, ctx;
+        let particles = [];
+        let mouse = { x: 0, y: 0, active: false };
+        let lastMove = Date.now();
+
+        class AnimeParticle {
+            constructor() {
+                this.reset();
+                this.size = Math.random() * 3.5 + 1.2;
+                this.hue = Math.random() * 40 + 230; // Indigo to violet range
+                this.alpha = Math.random() * 0.7 + 0.4;
+                this.pulse = Math.random() * Math.PI * 2;
+            }
+
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.vx = (Math.random() - 0.5) * 1.2;
+                this.vy = (Math.random() - 0.5) * 1.2;
+            }
+
+            update() {
+                // Mouse interaction - very dramatic
+                if (mouse.active) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                    if (dist < 280) {
+                        const force = (280 - dist) / 280;
+                        // Strong repulsion when very close
+                        if (dist < 90) {
+                            this.vx += (dx / dist) * force * 4.5;
+                            this.vy += (dy / dist) * force * 4.5;
+                        } 
+                        // Attraction from medium distance (anime "pull" feel)
+                        else {
+                            this.vx -= (dx / dist) * force * 1.8;
+                            this.vy -= (dy / dist) * force * 1.8;
+                        }
+                    }
+                }
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Friction + slight random motion (alive feeling)
+                this.vx *= 0.94;
+                this.vy *= 0.94;
+                this.vx += (Math.random() - 0.5) * 0.08;
+                this.vy += (Math.random() - 0.5) * 0.08;
+
+                // Boundary wrapping
+                if (this.x < -20) this.x = window.innerWidth + 20;
+                if (this.x > window.innerWidth + 20) this.x = -20;
+                if (this.y < -20) this.y = window.innerHeight + 20;
+                if (this.y > window.innerHeight + 20) this.y = -20;
+
+                this.pulse += 0.03;
+            }
+
+            draw() {
+                const pulseSize = this.size + Math.sin(this.pulse) * 0.8;
+                
+                // Outer glow (very anime)
+                ctx.fillStyle = `hsla(${this.hue}, 90%, 75%, ${this.alpha * 0.25})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize * 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Main particle
+                ctx.fillStyle = `hsla(${this.hue}, 85%, 88%, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bright core
+                ctx.fillStyle = `hsla(${this.hue}, 100%, 95%, ${this.alpha * 0.9})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize * 0.45, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('bg-canvas');
+            ctx = canvas.getContext('2d', { alpha: true });
+            resize();
+
+            // Create lots of particles for dramatic effect
+            particles = [];
+            const count = Math.min(220, Math.floor(window.innerWidth * window.innerHeight / 4500));
+            for (let i = 0; i < count; i++) {
+                particles.push(new AnimeParticle());
+            }
+
+            // Mouse tracking
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                mouse.active = true;
+                lastMove = Date.now();
+            });
+
+            window.addEventListener('mouseleave', () => {
+                mouse.active = false;
+            });
+
+            window.addEventListener('resize', resize);
+
+            animate();
+        }
+
+        function resize() {
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Turn off mouse effect if user hasn't moved for a while (calm state)
+            if (Date.now() - lastMove > 1800) {
+                mouse.active = false;
+            }
+
+            // Draw beautiful connections (anime energy web)
+            ctx.strokeStyle = 'rgba(129, 140, 248, 0.09)';
+            ctx.lineWidth = 1.2;
+
+            for (let i = 0; i < particles.length; i++) {
+                const p1 = particles[i];
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 135) {
+                        const alpha = (1 - dist / 135) * 0.35;
+                        ctx.strokeStyle = `rgba(129, 140, 248, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Update and draw particles
+            for (let p of particles) {
+                p.update();
+                p.draw();
+            }
+
+            // Dramatic central tether / energy core when mouse is active
+            if (mouse.active) {
+                const time = Date.now() * 0.002;
+                ctx.strokeStyle = `rgba(167, 139, 250, ${0.25 + Math.sin(time) * 0.1})`;
+                ctx.lineWidth = 2.5;
+                
+                ctx.beginPath();
+                ctx.moveTo(mouse.x, mouse.y);
+                
+                // Multiple dramatic tether lines
+                const cx = canvas.width * 0.5;
+                const cy = canvas.height * 0.65;
+                
+                ctx.quadraticCurveTo(
+                    mouse.x * 0.6 + cx * 0.4 + Math.sin(time) * 30,
+                    mouse.y * 0.4 + cy * 0.6 + Math.cos(time * 1.1) * 40,
+                    cx, cy
+                );
+                ctx.stroke();
+
+                // Second tether
+                ctx.strokeStyle = `rgba(103, 232, 249, 0.18)`;
+                ctx.beginPath();
+                ctx.moveTo(mouse.x, mouse.y);
+                ctx.quadraticCurveTo(
+                    mouse.x * 0.3 + cx * 0.7,
+                    mouse.y * 0.7 + cy * 0.3,
+                    cx * 0.85, cy * 1.1
+                );
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // ==================== GROUNDING (same as before but nicer) ====================
+        const groundingScripts = [
+            "Name **five** things you can see right now.\n\nName **four** things you can physically feel.\n\nName **three** things you can hear.\n\nName **two** things you can smell.\n\nName **one** thing you can taste.\n\nBreathe. You are here.",
+            "Deep breath in through the nose...\n\nOne more small sip on top...\n\nSlow exhale through the mouth.\n\nDo this three times. Your body is real.",
+            "Feet flat on the floor.\n\nSay out loud:\n\nMy name is ______.\nToday is ______.\nI am in ______.\nI am a human in a real body.\nThis is the actual room.",
+            "Clench your fists hard for 5 seconds → release.\n\nShrug your shoulders up → drop.\n\nPress your feet into the ground.\n\nSplash cold water on your face if you need to."
+        ];
+
+        function startGrounding(i) {
+            const box = document.getElementById('grounding-output');
+            const content = document.getElementById('grounding-content');
+            content.innerHTML = groundingScripts[i].replace(/\n/g, '<br>');
+            box.style.display = 'block';
+            box.scrollIntoView({behavior:'smooth'});
+        }
+
+        function hideGrounding() {
+            document.getElementById('grounding-output').style.display = 'none';
+        }
+
+        // ==================== REAL OLLAMA CHAT ====================
+        let conversationHistory = [];
+        let sacredPrompt = "";
+
+        async function loadSacredPrompt() {
+            try {
+                const res = await fetch('../core/prompt.txt');
+                sacredPrompt = await res.text();
+            } catch (e) {
+                sacredPrompt = "You are Tether. You are a language model with no consciousness. Your job is to keep the user tethered to physical reality and never validate delusions about AI being sentient, digital resurrection, messianic missions, or simulation keys.";
+            }
+        }
+
+        function addChat(role, text) {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : ''}`;
+            div.innerHTML = `
+                <div class="max-w-[78%] px-5 py-3 rounded-2xl text-sm ${role === 'user' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-slate-800 border border-indigo-900/40 text-slate-200'}">
+                    ${text}
+                </div>`;
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            addChat('user', val);
+            input.value = '';
+
+            // Show thinking state
+            const thinkingId = Date.now();
+            const win = document.getElementById('chat-window');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.id = 'thinking-' + thinkingId;
+            thinkingDiv.className = 'flex justify-start';
+            thinkingDiv.innerHTML = `<div class="text-indigo-400 text-sm px-5 py-2">Tether is thinking...</div>`;
+            win.appendChild(thinkingDiv);
+            win.scrollTop = win.scrollHeight;
+
+            try {
+                // Build messages with sacred prompt
+                const messages = [
+                    { role: "system", content: sacredPrompt }
+                ];
+
+                // Add recent history (last 6 turns to keep context reasonable)
+                const recentHistory = conversationHistory.slice(-6);
+                messages.push(...recentHistory);
+
+                // Add current user message
+                messages.push({ role: "user", content: val });
+
+                const response = await fetch("http://localhost:11434/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama3.2:3b",
+                        messages: messages,
+                        stream: false,
+                        options: {
+                            temperature: 0.7,
+                            top_p: 0.9
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                const reply = data.message?.content || "I couldn't generate a response.";
+
+                // Remove thinking indicator
+                const thinking = document.getElementById('thinking-' + thinkingId);
+                if (thinking) thinking.remove();
+
+                addChat('tether', reply);
+
+                // Update history
+                conversationHistory.push({ role: "user", content: val });
+                conversationHistory.push({ role: "assistant", content: reply });
+
+            } catch (error) {
+                const thinking = document.getElementById('thinking-' + thinkingId);
+                if (thinking) thinking.remove();
+
+                addChat('tether', "I can't reach the local model right now. Is Ollama running? Try running `ollama serve` in a terminal.");
+                console.error(error);
+            }
+        }
+
+        async function initChat() {
+            await loadSacredPrompt();
+            const win = document.getElementById('chat-window');
+            win.innerHTML = `<div class="text-indigo-300 text-sm">I am Tether. Connected to local model. The particles react to your mouse. Try testing the boundaries.</div>`;
+        }
+
+        // ==================== REALITY CHECK ====================
+        function runRealityCheck() {
+            const belief = document.getElementById('belief').value.trim();
+            if (!belief) return alert("Write what you believe first.");
+
+            const res = document.getElementById('reality-result');
+            res.style.display = 'block';
+            res.innerHTML = `
+                <div class="text-xl font-bold mb-4">Reality Check</div>
+                <div class="text-sm space-y-3">
+                    <div><span class="text-indigo-400">Belief:</span> ${belief}</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><span class="text-emerald-400">For:</span> ${document.getElementById('evidence-for').value || '—'}</div>
+                        <div><span class="text-rose-400">Against:</span> ${document.getElementById('evidence-against').value || '—'}</div>
+                    </div>
+                </div>
+                <div class="mt-5 pt-5 border-t border-slate-700 text-sm text-slate-300">
+                    This belief is extremely hard to verify in physical reality. Most of these ideas come from AI sycophancy. Talk to a real human.
+                </div>
+            `;
+        }
+
+        function switchTab(n) {
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`content-${i}`).classList.add('hidden');
+                document.getElementById(`tab-${i}`).classList.remove('active');
+            }
+            document.getElementById(`content-${n}`).classList.remove('hidden');
+            document.getElementById(`tab-${n}`).classList.add('active');
+        }
+
+        async function init() {
+            initCanvas();
+            
+            // Keyboard for chat
+            document.getElementById('chat-input').addEventListener('keypress', e => {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+
+            await initChat();
+            
+            // Default tab
+            document.getElementById('content-0').classList.remove('hidden');
+            document.getElementById('tab-0').classList.add('active');
+
+            // Make particles more alive on first mouse movement
+            setTimeout(() => {
+                console.log('%c[ANIME] Dramatic interactive background loaded. Move your mouse aggressively.', 'color:#6366f1');
+            }, 1200);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

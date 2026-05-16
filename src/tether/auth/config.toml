@@ -1,0 +1,21 @@
+# Tether Provider Configuration
+# This file is managed by `tether auth setup`.
+# You can edit it directly if you prefer.
+
+[provider]
+kind = "ollama"  # One of: ollama, litellm, openai_compatible
+
+[provider.ollama]
+base_url = "http://127.0.0.1:11434"
+model = "llama3.2"
+timeout_seconds = 60
+
+[provider.litellm]
+model = "gpt-4o"
+timeout_seconds = 120
+# custom_llm_provider = "openai"  # optional: openai, anthropic, groq, etc.
+
+[provider.openai_compatible]
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+timeout_seconds = 120

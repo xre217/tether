@@ -1,0 +1,75 @@
+#!/bin/bash
+# Tether Launcher
+# Usage:
+#   ./tether              → shows help
+#   ./tether anime        → starts dramatic anime version
+#   ./tether serious      → starts clean serious version
+#   ./tether redteam      → runs the red-teaming harness
+
+set -e
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT=8888
+
+show_help() {
+    echo "Tether — Reality Tethering Tool"
+    echo ""
+    echo "Usage:"
+    echo "  ./tether anime       Start the dramatic Anime Edition"
+    echo "  ./tether serious     Start the clean Serious Edition"
+    echo "  ./tether redteam     Run the red-teaming harness"
+    echo "  ./tether help        Show this message"
+    echo ""
+    echo "Ollama Status:"
+    if command -v ollama &> /dev/null; then
+        echo "  ✓ Ollama is installed"
+    else
+        echo "  ✗ Ollama not found. Install from https://ollama.com/download"
+    fi
+    echo ""
+}
+
+start_anime() {
+    echo "Starting Tether — Anime Edition..."
+    echo "Opening http://localhost:$PORT in your browser..."
+    (cd "$DIR/anime" && python3 -m http.server $PORT >/dev/null 2>&1) &
+    SERVER_PID=$!
+    sleep 1.2
+    open "http://localhost:$PORT" 2>/dev/null || echo "Please open http://localhost:$PORT manually"
+    echo "Press Ctrl+C to stop the server when you're done."
+    wait $SERVER_PID
+}
+
+start_serious() {
+    echo "Starting Tether — Serious Edition..."
+    (cd "$DIR/serious" && python3 -m http.server $PORT >/dev/null 2>&1) &
+    SERVER_PID=$!
+    sleep 1.2
+    open "http://localhost:$PORT" 2>/dev/null || echo "Please open http://localhost:$PORT manually"
+    echo "Press Ctrl+C to stop the server."
+    wait $SERVER_PID
+}
+
+run_redteam() {
+    echo "Running Red-Team Harness..."
+    python3 "$DIR/run_redteam.py"
+}
+
+case "${1:-help}" in
+    anime|a)
+        start_anime
+        ;;
+    serious|s)
+        start_serious
+        ;;
+    redteam|rt)
+        run_redteam
+        ;;
+    help|h|--help)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $1"
+        show_help
+        ;;
+esac
