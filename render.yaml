@@ -7,8 +7,10 @@ services:
     plan: free
     region: oregon
     buildCommand: >
+      mkdir -p .zero/bin &&
       curl -fsSL https://zerolang.ai/install.sh | bash &&
-      pip install -e . &&
+      cp -r ~/.zero/bin/zero .zero/bin/zero &&
+      pip install . &&
       pip install -r requirements-deploy.txt
     startCommand: uvicorn tether.web.server:app --host 0.0.0.0 --port $PORT
     envVars:

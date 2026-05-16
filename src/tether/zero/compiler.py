@@ -80,8 +80,18 @@ class ZeroCompiler:
         if zero_path:
             self._binary = zero_path
         else:
-            default = Path.home() / ".zero" / "bin" / "zero"
-            self._binary = str(default) if default.exists() else "zero"
+            # Check common locations:
+            # 1. Project-local (Render build persists this)
+            local = Path.cwd() / ".zero" / "bin" / "zero"
+            # 2. Home directory (local macOS install)
+            home = Path.home() / ".zero" / "bin" / "zero"
+
+            if local.exists():
+                self._binary = str(local)
+            elif home.exists():
+                self._binary = str(home)
+            else:
+                self._binary = "zero"  # PATH fallback
 
     @property
     def binary(self) -> str:
