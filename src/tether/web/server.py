@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,7 +60,7 @@ class ChatResponse(BaseModel):
 
 # ── Simulator (lazy init) ───────────────────────────────────────────────────
 
-_simulator: TetherSimulator | None = None
+_simulator: Optional["TetherSimulator"] = None
 
 
 def get_simulator() -> TetherSimulator:
