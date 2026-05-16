@@ -5,6 +5,7 @@ Chat mode is currently a stub that prints the disclaimer and prompt version.
 """
 
 import sys
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -166,10 +167,14 @@ def version() -> None:
 
 @app.command()
 def web() -> None:
-    """Launch the local Tether web app (Gradio) — may have dependency issues on Python 3.9."""
-    from tether.web.app import launch
-    rprint("[bold cyan]Starting Tether Web App...[/bold cyan]")
-    launch()
+    """Launch the unified Tether web server (API + Gradio UI)."""
+    import uvicorn
+    rprint("[bold cyan]Starting Tether Web Server...[/bold cyan]")
+    rprint("  API:  http://127.0.0.1:8080/api")
+    rprint("  UI:   http://127.0.0.1:8080")
+    rprint("  Zero: POST /api/zero/verify\n")
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("tether.web.server:app", host="0.0.0.0", port=port, reload=True)
 
 
 @app.command()

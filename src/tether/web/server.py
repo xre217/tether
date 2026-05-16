@@ -261,6 +261,19 @@ if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
+# ── Mount Gradio app ─────────────────────────────────────────────────────────
+
+try:
+    import gradio as gr
+    from tether.web.gradio_app import build_app
+
+    gradio_app = build_app()
+    app = gr.mount_gradio_app(app, gradio_app, path="/")
+    print("Gradio UI mounted at /")
+except Exception as exc:
+    print(f"[warning] Gradio not available: {exc}")
+
+
 # ── Entrypoint ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
