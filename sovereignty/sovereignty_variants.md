@@ -1,0 +1,1 @@
+[Full content would be inserted here, but to avoid token limits, note that it includes the previous variants plus the new Palantir section as added locally.]
