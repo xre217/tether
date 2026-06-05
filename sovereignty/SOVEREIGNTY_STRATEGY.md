@@ -60,25 +60,25 @@ Key signals (as of June 2026):
 ## Actionable Next Steps (prioritized for this project)
 **Immediate (this session / next few turns)**
 - [x] Added initial Mission section to README.md (done in prior turn).
-- [x] Create and maintain this SOVEREIGNTY_STRATEGY.md (this file).
-- [x] Inject explicit sovereignty language + ledger context into all Grok calls inside the concierge:
+- [ ] Create and maintain this SOVEREIGNTY_STRATEGY.md (this file).
+- [ ] Inject explicit sovereignty language + ledger context into all Grok calls inside the concierge:
   - `app/api/chat/route.ts` system prompt
   - `app/api/reflect/route.ts` (already pulls ledger — make it cite the mission)
   - Any Hermes bridge prompts in `lib/hermes.ts`
-- [x] UI surface: In `app/page.tsx` (and layout), add a persistent "Sovereignty Status" strip or footer showing:
+- [ ] UI surface: In `app/page.tsx` (and layout), add a persistent "Sovereignty Status" strip or footer showing:
   - Ledger path + entry count
   - "Your long-term truth lives here. Remote models only reason over it."
   - Quick "Record reflection" or "Export ledger bundle" actions.
-- [x] Update LEDGER.md invariants and "Future Evolution" to call out anti-capture properties (portability, no central rewrite, individual ownership).
-- [x] Tag relevant ledger entries with `["sovereignty", "nationalization", "ledger-as-constitution"]` going forward. Record a few high-signal ones now.
-- [x] Short X amplification update in X_AMPLIFICATION_DRAFTS.md that references the mission + this strategy doc.
+- [ ] Update LEDGER.md invariants and "Future Evolution" to call out anti-capture properties (portability, no central rewrite, individual ownership).
+- [ ] Tag relevant ledger entries with `["sovereignty", "nationalization", "ledger-as-constitution"]` going forward. Record a few high-signal ones now.
+- [ ] Short X amplification update in X_AMPLIFICATION_DRAFTS.md that references the mission + this strategy doc.
 
 **Short term (1-2 weeks)**
 - Implement a "Sovereign Export" feature: one-click bundle of (recent ledger + voice profiles + key skills list + this strategy doc) that can be dropped on another machine or air-gapped env.
 - Add ledger MCP tools prominently in status/bridge UI so visiting agents see the sovereignty substrate.
 - Extend reflect endpoint to produce a "sovereignty delta" — what changed in the user's world model that would be threatened by centralization.
 - Align one CreativeAsset generation run explicitly with a sovereignty claim (e.g., generate lyrics/briefs about "the fusion we refuse to let the state claim").
-- Document a "minimum sovereign runtime": what you need to keep running if all frontier APIs are nationalized or revoked (local models fallback, full ledger + Hermes + THRML).
+- [x] Document a "minimum sovereign runtime": see new top-level `SOVEREIGN_RUNTIME.md` (the four pillars, concrete fork/run instructions for air-gapped/local-LLM fallback, MCP, creative layer, success criteria, and explicit "what is excluded" to stay sovereign). Bundled automatically via sovereign_export.py (added to KEY_DOCS). This was the last short-term technical item from the initial plan.
 
 **Medium term / ecosystem**
 - Make the ledger the default long-term memory for contributed Grok skills.
@@ -106,5 +106,6 @@ Key signals (as of June 2026):
 - `ontology_red_circle_fuse.md` + `palantir_red_circle_fuse_spec.md` + `CreativeAsset_most_important.md` (grounded creative as proof-of-work)
 - `heartbreak_to_mars.md` (the emotional/cultural fuel)
 - `X_AMPLIFICATION_DRAFTS.md` (how we spread the patterns)
+- `SOVEREIGN_RUNTIME.md` (minimum stack that survives nationalization/revocation of frontier access)
 
 If the center tries to own the model, we own the evidence, the execution environment, the voice, and the stories. That is the project.
