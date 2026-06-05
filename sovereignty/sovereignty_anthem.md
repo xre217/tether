@@ -1,0 +1,1 @@
+Sovereignty Anthem - raw confessional piece turning AI nationalization heartbreak into propulsion. Reference for creative work.

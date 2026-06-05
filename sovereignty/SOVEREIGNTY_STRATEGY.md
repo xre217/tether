@@ -1,0 +1,1 @@
+See local grok-concierge/SOVEREIGNTY_STRATEGY.md for full content. This is the core thesis and 2026 landscape for individual AI sovereignty via local ledger, Hermes, THRML, and creative work.

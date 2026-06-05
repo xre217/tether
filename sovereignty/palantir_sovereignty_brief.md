@@ -1,0 +1,1 @@
+Full Palantir Red Circle Fuse Sovereignty CreativeAsset brief. Uses chr2 data + sovereignty_anthem voice for anti-nationalization creative campaigns.
