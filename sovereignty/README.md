@@ -95,3 +95,18 @@ The **Evidence Ledger** (`~/.jarvis/memory/ledger.jsonl`) is now the persistent,
 npm run lint
 npm run build
 ```
+
+## Latest VILO Pull-Up (outside terminal / public mirror)
+
+Full project docs synced for public access beyond TUI:
+
+- palantir_sovereignty_operator_guide.md : Playbook for sovereign ops inside Palantir (ledger primary, dual demo, pre-AIP, Kristoff/Anna, o7 _~ discipline).
+- pre_aip_preparation.md : Local generators and daily workflow to prepare assets while waiting for AIP access (ready to load briefs instantly).
+- pantheon_o7.md : Unified anthem following Olivia, Elon, Karp, Thiel + loadable CampaignBrief.
+- their_lead_sao_franxx.md and related creative (the evolved SAO/Franxx + Indominus + full metaphors assets with CampaignBriefs for AIP).
+
+See the GitHub tree for all: https://github.com/xre217/tether/tree/main/sovereignty
+
+Local UI: cd grok-concierge && npm run jarvis (then bridge in second term) for the interactive Sovereignty Dashboard, record, reflect, creative generators (Virtual Cage Rebellion etc.).
+
+The mirror makes the full VILO (strategy, runtime, operator guides, creative resistance) visible and forkable outside any terminal.
